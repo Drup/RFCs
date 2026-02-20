@@ -46,13 +46,13 @@ without support from the compiler in OCaml:
 
 has different representation if `type t = Foo of int * int` or `type t = Foo of (int * int)` (the latter contains an extra pointer). It's not possible to determine where the pointers are by local syntactical analysis.
 
-Even worse:
+Even worse, in the presence of the flat float array optimisation:
   
 ```
    [| HOLE; HOLE |]
 ```
 
-the block to allocate depends on weather both `HOLE` are *dynamically* floats or not.
+the code depends on the type inferred for the holes.
 
 The recent unboxing extensions makes the need to involve the compiler even clearer.
 
@@ -82,6 +82,14 @@ without looking at the content of the holes, and for which holes have known posi
 It returns the allocated value and a tuple (or an heterogeneous list) of the destinations
 to all the holes in the expression.
 The hole are replaced with a dummy value (following the same convention as TMC).
+
+Typing wise, `[%ocaml.value_with_holes C[[%hole],...,[%hole]]]` is equivalent to
+
+```ocaml
+([%ocaml.value_with_holes (C[([%hole] : 'a_1),...,([%hole] : 'a_n)] : 'a)] : 'a * ('a_1 dest * ... 'a_n dest))
+```
+
+This expression is not considered pure for the purpose of generalisation (at least while implicit flat float arrays are still a thing, and probably still later because of unboxing).
 
 ## Guaranties
 
